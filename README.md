@@ -1,168 +1,77 @@
-```
-╔═══════════════════════════════════════════════════════════════════════════════════════════╗
-║  ██╗  ██╗███████╗██████╗ ██╗  ██╗ █████╗ ███████╗███████╗████████╗██╗   ██╗███████╗     ║
-║  ██║  ██║██╔════╝██╔══██╗██║  ██║██╔══██╗██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔════╝     ║
-║  ███████║█████╗  ██████╔╝███████║███████║█████╗  ███████╗   ██║   ██║   ██║███████╗     ║
-║  ██╔══██║██╔══╝  ██╔═══╝ ██╔══██║██╔══██║██╔══╝  ╚════██║   ██║   ██║   ██║╚════██║     ║
-║  ██║  ██║███████╗██║     ██║  ██║██║  ██║███████╗███████║   ██║   ╚██████╔╝███████║     ║
-║  ╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝   ╚═╝    ╚═════╝ ╚══════╝     ║
-╠═══════════════════════════════════════════════════════════════════════════════════════════╣
-║  ▸ FINANCIAL INTELLIGENCE TERMINAL  ▸ v1.0.0  ▸ SYSTEM: ARMED & OPERATIONAL             ║
-╚═══════════════════════════════════════════════════════════════════════════════════════════╝
-```
+# ▉ HEPHAESTUS — Financial Intelligence Terminal
 
-> **"Every dollar leaking through your funnel is a dollar funding your competitor."**
+A Bloomberg-style CLI dashboard that turns **any CSV** into actionable financial intelligence — powered by AI.
+
+![Python](https://img.shields.io/badge/Python-3.11+-blue)
+![Rich](https://img.shields.io/badge/Rich-CLI-orange)
+![Gemini](https://img.shields.io/badge/AI-Gemini-cyan)
 
 ---
 
-## ▸ SITUATION REPORT
-
-```
-ASSET CLASS  : Customer Conversion Intelligence
-RISK LEVEL   : CRITICAL — Revenue hemorrhage detected
-UPTIME REQ   : 24/7 terminal access
-AI ENGINE    : Gemini 2.5 Flash (real-time analysis)
-DATA LAYER   : SQLite / Pandas
-STATUS       : ████████████████████ LIVE
-```
-
-**HEPHAESTUS** is a high-intensity, Wall Street–grade CLI terminal that dissects your customer behavior pipeline, exposes conversion failures in real time, and deploys AI-driven strike recommendations — all rendered in a fire-breathing terminal interface built with `rich` and `plotext`.
-
-No dashboards. No browsers. No fluff. **Pure signal.**
-
----
-
-## ▸ INTELLIGENCE MODULES
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  MODULE                   │  FUNCTION                         │  STATUS     │
-├───────────────────────────┼───────────────────────────────────┼─────────────┤
-│  FUNNEL ANALYZER          │  Drop-off detection & stage maps  │  ● ACTIVE   │
-│  ROI TRACKER              │  Channel P&L — red/green signals  │  ● ACTIVE   │
-│  AI STRIKE ENGINE         │  Gemini-powered CRO directives    │  ● ACTIVE   │
-│  IMPACT ALERTS            │  Monthly recovery $ quantified    │  ● ACTIVE   │
-└───────────────────────────┴───────────────────────────────────┴─────────────┘
-```
-
-**Funnel Drop-off Analysis** — Horizontal bar charts render stage-by-stage user attrition. The moment your pipeline starts bleeding, you see it in ticks.
-
-**Marketing ROI Tracking** — Color-coded P&L bars per channel. Green means go. Red means cut. No ambiguity.
-
-**AI Recommendations** — Gemini reads the numbers and issues targeted CRO directives. Not generic. Not fluffy. Actionable intelligence.
-
-**Financial Impact Alerts** — The terminal surfaces your single highest-leverage fix and attaches a dollar figure to the inaction. Every. Single. Run.
-
----
-
-## ▸ SYSTEM ARCHITECTURE
-
-```
-hephaestus/
-│
-├── app/
-│   ├── main.py          ◀  Terminal UI  ·  Rich + Plotext
-│   ├── analyzer.py      ◀  DB pipeline  ·  Pandas DataFrames
-│   ├── ai_engine.py     ◀  LLM bridge   ·  Gemini 2.5 Flash
-│   └── database.py      ◀  Conn layer   ·  SQLite utilities
-│
-├── data/
-│   ├── revenue_leak.db  ◀  Operational database
-│   └── schema.sql       ◀  Table definitions
-│
-├── data_generator.py    ◀  Seed script  ·  Mock data generation
-├── requirements.txt     ◀  Dependency manifest
-├── .env                 ◀  SECRETS — keep dark, keep safe
-└── README.md            ◀  You are here
-```
-
----
-
-## ▸ DEPLOYMENT SEQUENCE
-
-### STEP 01 — PREREQUISITES
-
-```
-REQUIRED    Python 3.9+
-CONFIRMED   pip, venv
-```
-
-### STEP 02 — ESTABLISH POSITION
+## Quick Start
 
 ```bash
-# Isolate your environment — no contamination
-python -m venv venv
-
-# Engage
-source venv/bin/activate        # macOS / Linux
-venv\Scripts\activate           # Windows
-
-# Load the arsenal
+# 1. Install dependencies
 pip install -r requirements.txt
+
+# 2. Run Hephaestus
+python run.py
 ```
 
-### STEP 03 — CREDENTIALS
+That's it. The interactive menu will guide you through importing data and launching the dashboard.
 
-Create `.env` in root. This file does not leave your machine.
+---
+
+## How It Works
+
+1. **Import any CSV** → The system auto-detects your columns (numeric, categorical, currency)
+2. **Analyze** → It finds value/cost/loss columns and groups data by categories
+3. **Visualize** → Bloomberg-style terminal with responsive charts
+4. **AI Insights** → Gemini-powered CRO-level recommendations (optional)
+
+---
+
+## Project Structure
+
+```
+Hephaestus/
+├── run.py              ← Single entry point (start here)
+├── import_data.py      ← Universal CSV importer
+├── requirements.txt    ← Dependencies
+├── .env                ← API key (optional, create yourself)
+├── app/
+│   ├── main.py         ← Bloomberg terminal dashboard
+│   ├── analyzer.py     ← Auto-detecting data analyzer
+│   ├── ai_engine.py    ← Gemini AI integration
+│   └── database.py     ← SQLite connection manager
+├── data/
+│   └── revenue_leak.db ← Auto-generated database
+└── sample data/
+    └── Financials.csv  ← Example dataset
+```
+
+---
+
+## AI Setup (Optional)
+
+Create a `.env` file in the project root:
 
 ```env
-GEMINI_API_KEY=your_actual_api_key_here
+GOOGLE_API_KEY=your_gemini_api_key_here
 ```
 
-> ⚠ `.env` is git-ignored by default. **Do not commit your key. Ever.**
-
-### STEP 04 — SEED THE DATABASE
-
-Only required on first run. Seeds mock transactional data into `revenue_leak.db`.
-
-```bash
-python data_generator.py
-```
-
-```
-▸ Generating customer journey records   [████████████████████] 100%
-▸ Seeding marketing channel data        [████████████████████] 100%
-▸ Database armed. Ready for analysis.
-```
-
-### STEP 05 — IGNITION
-
-```bash
-python app/main.py
-```
-
-The terminal initializes. The bleeding stops here.
+Without it, the dashboard still works with static insights.
 
 ---
 
-## ▸ TECH STACK
+## Commands
 
-```
-┌─────────────────┬────────────────────────────────────────────┐
-│  LAYER          │  TECHNOLOGY                                │
-├─────────────────┼────────────────────────────────────────────┤
-│  Terminal UI    │  Rich · Plotext                            │
-│  Data Engine    │  Pandas · NumPy · SQLite                   │
-│  AI Layer       │  Google Generative AI — gemini-2.5-flash   │
-│  Runtime        │  Python 3.9+                               │
-└─────────────────┴────────────────────────────────────────────┘
-```
+| Command | What it does |
+|---|---|
+| `python run.py` | Interactive menu (recommended) |
+| `python import_data.py "path/to/file.csv"` | Direct CSV import |
+| `python app/main.py` | Launch dashboard directly |
 
 ---
 
-## ▸ RISK DISCLOSURE
-
-```
-╔══════════════════════════════════════════════════════════════╗
-║  ⚡  THIS SYSTEM WILL SURFACE UNCOMFORTABLE TRUTHS.          ║
-║  ⚡  REVENUE LEAKS SHOWN ARE REAL (EVEN IN MOCK DATA).       ║
-║  ⚡  AI OUTPUT IS ADVISORY — HUMAN JUDGMENT REQUIRED.        ║
-╚══════════════════════════════════════════════════════════════╝
-```
-
----
-
-```
-▸ HEPHAESTUS FINANCIAL TERMINAL  ·  POSITION: LONG ON DATA, SHORT ON EXCUSES
-████████████████████████████████████████████████████████████████████████  END
-```
+Built with [Rich](https://github.com/Textualize/rich) · [Plotext](https://github.com/piccolomo/plotext) · [Google Gemini](https://ai.google.dev/)
