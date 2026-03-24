@@ -6,11 +6,11 @@ import plotext as plt
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
+from rich.table import Table
 from rich.layout import Layout
 from rich.align import Align
+from rich.columns import Columns
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from rich import print as rprint
-from rich.live import Live
 
 from analyzer import RevenueAnalyzer
 from ai_engine import InsightEngine
@@ -22,91 +22,79 @@ TERM_COLOR = "orange1"
 TERM_BORDER = "cyan"
 TERM_BG = "black"
 
-def create_header():
+def setup_plotext_theme():
+    plt.theme('dark')
+
+def create_header(metrics):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    header_text = f" ▉ HEPHAESTUS FINANCIAL TERMINAL ▉   SYSTEM: LIVE   |   DATETIME: {now}   |   USER: ADMIN "
+    val_col = metrics.get('value_col', 'N/A')
+    total = metrics.get('total_value', 0)
+    rows = metrics.get('total_rows', 0)
+    margin = metrics.get('margin_pct', None)
+    
+    parts = [f" ▉ HEPHAESTUS ▉  {now}  |  {val_col}: ${total:,.0f}  |  ROWS: {rows}"]
+    if margin is not None:
+        parts.append(f"  |  MARGIN: {margin}%")
+    parts.append("  |  LIVE ")
+    
     return Panel(
-        Text(header_text, style=f"bold {TERM_BORDER} on {TERM_BG}", justify="center"),
+        Text("".join(parts), style=f"bold {TERM_BORDER} on {TERM_BG}", justify="center"),
         style=f"on {TERM_BG}",
         border_style=TERM_BORDER
     )
 
-def setup_plotext_theme():
-    # Use a pre-defined theme for black background
-    plt.theme('dark')
-    # Use standard plotext methods for colors if needed, but 'dark' works
-
-def create_funnel_ansi(metrics, terminal_width):
-    plt.clf()
-    setup_plotext_theme()
-    # Dynamic sizing based on the panel width allocated by Rich
-    plt.plotsize(terminal_width, 12)
-    plt.title("CUSTOMER JOURNEY FUNNEL")
+def render_kpi_bar(metrics):
+    kpi = Text(style=f"{TERM_COLOR} on {TERM_BG}")
     
-    stages = []
-    users = []
+    leak = metrics.get('total_leak_value', 0)
+    worst = metrics.get('worst_category', 'N/A')
     
-    for row in reversed(metrics['funnel']):
-        stages.append(row['event_type'].replace('_', ' ').title())
-        users.append(int(row['users']))
-        
-    plt.bar(stages, users, orientation="horizontal", color="yellow")
-    return plt.build()
-
-def create_roi_ansi(metrics, terminal_width):
-    plt.clf()
-    setup_plotext_theme()
-    plt.plotsize(terminal_width, 15)
-    plt.title("MARKETING ROI (%)")
+    kpi.append("[!]", style="bold red blink")
+    kpi.append(f" LEAKS: ", style="bold red")
+    kpi.append(f"${leak:,.0f}", style="bold red reverse")
+    kpi.append("  |  ", style="dim")
     
-    sources = []
-    rois = []
-    colors = []
+    if 'total_loss' in metrics:
+        kpi.append(f"EROSION: ", style=f"bold {TERM_COLOR}")
+        kpi.append(f"${metrics['total_loss']:,.0f}", style=f"bold {TERM_COLOR}")
+        kpi.append("  |  ", style="dim")
     
-    for row in metrics.get('roi', []):
-        sources.append(row['source'])
-        roi_val = row['roi_percent']
-        if math.isinf(roi_val):
-            roi_val = 1500 # Cap for plot
-        rois.append(roi_val)
-        colors.append("yellow" if roi_val > 0 else "red")
-        
-    plt.bar(sources, rois, color=colors)
-    return plt.build()
-
-def render_financial_impact(metrics):
-    top_leak = metrics['top_leak_stage'].replace('_', ' ').title()
-    leak_value = f"${metrics['top_leak_value']:,.2f}"
-    
-    impact_text = Text(style=f"{TERM_COLOR} on {TERM_BG}")
-    impact_text.append("[!]", style="bold red blink")
-    impact_text.append(" CRITICAL LEAK IDENTIFIED: ", style="bold red")
-    impact_text.append(top_leak, style="bold underline red")
-    impact_text.append("\n\n")
-    impact_text.append("  > Estimated Monthly Recovery Potential: ", style=f"bold {TERM_COLOR}")
-    impact_text.append(leak_value, style=f"bold {TERM_COLOR} reverse")
+    kpi.append(f"WEAKEST: ", style=f"bold {TERM_COLOR}")
+    kpi.append(worst, style=f"bold {TERM_COLOR} underline")
     
     return Panel(
-        Align.center(impact_text, vertical="middle"), 
-        border_style="red", 
-        title="[bold red]SYSTEM ALERT[/bold red]", 
-        padding=(1, 2)
-    )
-
-def render_funnel(metrics, width):
-    ansi_plot = create_funnel_ansi(metrics, width)
-    return Panel(
-        Align.center(Text.from_ansi(ansi_plot)),
-        title=f"[bold {TERM_BORDER}]FUNNEL METRICS[/bold {TERM_BORDER}]",
-        border_style=TERM_BORDER,
+        Align.center(kpi, vertical="middle"),
+        border_style="red",
+        title="[bold red]SYSTEM ALERT[/bold red]",
         style=f"on {TERM_BG}"
     )
 
-def render_marketing_roi(metrics, width):
-    ansi_plot = create_roi_ansi(metrics, width)
+def create_bar_chart(labels, values, title, width, height=10, horizontal=False):
+    """Create a responsive bar chart that fits within the given width."""
+    plt.clf()
+    setup_plotext_theme()
+    # Constrain plot size to available panel width (subtract borders/padding)
+    plot_w = max(15, width - 4)
+    plt.plotsize(plot_w, height)
+    plt.title(title)
+    
+    # Truncate long labels for readability
+    max_label_len = 12 if not horizontal else 15
+    short_labels = [str(l)[:max_label_len] for l in labels]
+    
+    colors = ["yellow" if v >= 0 else "red" for v in values]
+    
+    if horizontal:
+        plt.bar(short_labels, values, orientation="horizontal", color=colors)
+    else:
+        plt.bar(short_labels, values, color=colors)
+    
+    return plt.build()
+
+def render_chart_panel(ansi_plot, title):
     return Panel(
-        Align.center(Text.from_ansi(ansi_plot)),
-        title=f"[bold {TERM_BORDER}]MARKETING P&L[/bold {TERM_BORDER}]",
+        Text.from_ansi(ansi_plot),
+        title=f"[bold {TERM_BORDER}]{title}[/bold {TERM_BORDER}]",
         border_style=TERM_BORDER,
         style=f"on {TERM_BG}"
     )
@@ -120,68 +108,117 @@ def render_ai_insights(insights):
         style=f"on {TERM_BG}"
     )
 
-def make_layout() -> Layout:
+def build_charts(metrics, half_w):
+    """Auto-generate chart panels from whatever groups were detected."""
+    charts = []
+    groups = metrics.get('groups', {})
+    value_col = metrics.get('value_col', 'value')
+    sum_key = f'{value_col}_sum'
+    
+    for group_name, records in groups.items():
+        if not records:
+            continue
+        labels = [r[group_name] for r in records]
+        values = [r.get(sum_key, 0) for r in records]
+        
+        title = f"{value_col.upper()} BY {group_name.upper()}"
+        
+        # Use horizontal bars if many categories
+        horizontal = len(labels) > 5
+        chart_height = max(8, min(12, len(labels) + 4))
+        
+        ansi = create_bar_chart(labels, values, title, half_w, height=chart_height, horizontal=horizontal)
+        charts.append(render_chart_panel(ansi, title))
+    
+    return charts
+
+def make_layout(num_charts) -> Layout:
     layout = Layout(name="root")
-    layout.split_column(
-        Layout(name="header", size=3),
-        Layout(name="main"),
-    )
-    layout["main"].split_row(
-        Layout(name="left", ratio=6),
-        Layout(name="right", ratio=4)
-    )
-    layout["left"].split_column(
-        Layout(name="impact", size=8),
-        Layout(name="funnel")
-    )
-    layout["right"].split_column(
-        Layout(name="roi", ratio=1),
-        Layout(name="ai_insights", ratio=1)
-    )
+    
+    if num_charts >= 2:
+        layout.split_column(
+            Layout(name="header", size=3),
+            Layout(name="alert", size=5),
+            Layout(name="charts_row"),
+            Layout(name="bottom")
+        )
+        layout["charts_row"].split_row(
+            Layout(name="chart_0"),
+            Layout(name="chart_1")
+        )
+        layout["bottom"].split_row(
+            Layout(name="chart_2") if num_charts >= 3 else Layout(name="ai_only_left"),
+            Layout(name="ai_insights")
+        )
+    elif num_charts == 1:
+        layout.split_column(
+            Layout(name="header", size=3),
+            Layout(name="alert", size=5),
+            Layout(name="charts_row"),
+            Layout(name="bottom")
+        )
+        layout["charts_row"].update(Layout(name="chart_0"))
+        layout["bottom"].update(Layout(name="ai_insights"))
+    else:
+        layout.split_column(
+            Layout(name="header", size=3),
+            Layout(name="alert", size=5),
+            Layout(name="ai_insights")
+        )
+    
     return layout
 
 def main():
     console.clear()
     
-    # 1. Loading Phase
     with Progress(
         SpinnerColumn(style=TERM_BORDER),
         TextColumn(f"[{TERM_COLOR}][progress.description]{{task.description}}[/{TERM_COLOR}]"),
         transient=True,
     ) as progress:
-        task1 = progress.add_task(description="Fetching market behaviors...", total=None)
-        time.sleep(1.0)
+        task1 = progress.add_task(description="Loading data...", total=None)
+        time.sleep(0.3)
         analyzer = RevenueAnalyzer()
         metrics = analyzer.get_summary_metrics()
-        progress.update(task1, description="Fetching market behaviors... DONE")
+        progress.update(task1, description="Loading data... DONE")
         
-        task2 = progress.add_task(description="Calculating financial upside...", total=None)
-        time.sleep(0.5)
-        progress.update(task2, description="Calculating financial upside... DONE")
-        
-        task3 = progress.add_task(description="Querying AI Oracle (Gemini)...", total=None)
+        task2 = progress.add_task(description="Querying AI Oracle...", total=None)
         engine = InsightEngine()
         insights = engine.generate_insights(metrics)
-        progress.update(task3, description="Querying AI Oracle... DONE")
+        progress.update(task2, description="Querying AI Oracle... DONE")
 
-    # 2. Build Layout and calculate relative widths
-    layout = make_layout()
     term_w, term_h = console.size
+    half_w = max(20, term_w // 2 - 2)
     
-    # Left column is ratio 6/10, minus border paddings (approx 6 chars)
-    left_plot_width = max(20, int(term_w * 0.6) - 6)
-    # Right column is ratio 4/10, minus border paddings (approx 6 chars)
-    right_plot_width = max(20, int(term_w * 0.4) - 6)
-
-    layout["header"].update(create_header())
-    layout["impact"].update(render_financial_impact(metrics))
-    layout["funnel"].update(render_funnel(metrics, left_plot_width))
-    layout["roi"].update(render_marketing_roi(metrics, right_plot_width))
+    chart_panels = build_charts(metrics, half_w)
+    num_charts = len(chart_panels)
+    
+    layout = make_layout(num_charts)
+    layout["header"].update(create_header(metrics))
+    layout["alert"].update(render_kpi_bar(metrics))
+    
+    # Assign charts
+    for i, panel in enumerate(chart_panels[:3]):
+        key = f"chart_{i}"
+        try:
+            layout[key].update(panel)
+        except KeyError:
+            break
+    
+    # If we have < 3 charts and chart_2 slot exists, fill it
+    if num_charts < 3:
+        try:
+            layout["ai_only_left"].update(Panel(
+                Text("No additional data dimensions detected.", style=f"dim {TERM_COLOR}"),
+                border_style=TERM_BORDER,
+                style=f"on {TERM_BG}"
+            ))
+        except KeyError:
+            pass
+    
     layout["ai_insights"].update(render_ai_insights(insights))
     
-    # 3. Print the layout once (Bloomberg terminal view)
     console.print(layout)
-    
+
 if __name__ == "__main__":
     main()
-

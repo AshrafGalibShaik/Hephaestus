@@ -1,28 +1,37 @@
 import os
 import json
-import google.generativeai as genai
 from dotenv import load_dotenv
 
-# Load env file
-load_dotenv('.env')
+# Load env file from project root
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(PROJECT_ROOT, '.env'))
 
 # Configure GenAI
-api_key = os.getenv('GOOGLE_API_KEY')
-if not api_key:
-    raise ValueError("GOOGLE_API_KEY not found in .env")
+api_key = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
+_genai_available = False
 
-genai.configure(api_key=api_key)
+if api_key:
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        _genai_available = True
+    except Exception:
+        pass
 
 class InsightEngine:
     def __init__(self):
-        # We try gemini-2.5-flash as requested. If it's technically unavailable or not aliased yet, 
-        # it might throw an error at generation time.
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
+        if _genai_available:
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
+        else:
+            self.model = None
 
     def generate_insights(self, metrics: dict) -> str:
+        if not self.model:
+            return self._fallback_insights(metrics)
+        
         prompt = f"""
 You are an expert Chief Revenue Officer (CRO) and direct response copywriter.
-You have been given the following raw funnel and revenue leak data for an ecommerce business:
+You have been given the following raw financial P&L data:
 
 DATA:
 {json.dumps(metrics, indent=2)}
@@ -30,9 +39,9 @@ DATA:
 Your job is to act like a doctor diagnosing a business revenue problem. 
 
 Provide a highly concise, punchy, and actionable insight report with the following structure:
-1. 🚨 **THE DIAGNOSIS** (What is the biggest leak?)
-2. 💰 **FINANCIAL IMPACT** (How much money are they losing, and what is the potential upside?)
-3. 🔍 **ROOT CAUSE HYPOTHESIS** (Why is it happening? Use the device breakdown if relevant)
+1. 🚨 **THE DIAGNOSIS** (What is the biggest revenue leak?)
+2. 💰 **FINANCIAL IMPACT** (How much money is leaking, and what is the potential upside?)
+3. 🔍 **ROOT CAUSE HYPOTHESIS** (Why is it happening? Use the segment/product/discount data)
 4. 💊 **THE FIX** (Actionable prescription to solve it)
 
 Rules:
@@ -45,12 +54,36 @@ Rules:
             response = self.model.generate_content(prompt)
             return response.text
         except Exception as e:
-            # Fallback to the known stable flash model if 2.5 is not accessible
             if "not found" in str(e).lower() or "invalid" in str(e).lower():
-                fallback_model = genai.GenerativeModel('gemini-1.5-flash')
-                response = fallback_model.generate_content(prompt)
-                return response.text
-            raise e
+                try:
+                    fallback_model = genai.GenerativeModel('gemini-1.5-flash')
+                    response = fallback_model.generate_content(prompt)
+                    return response.text
+                except Exception:
+                    return self._fallback_insights(metrics)
+            return self._fallback_insights(metrics)
+    
+    def _fallback_insights(self, metrics):
+        """Static insights when AI is unavailable."""
+        leak = metrics.get('total_leak_value', 0)
+        margin = metrics.get('profit_margin', 0)
+        worst = metrics.get('worst_segment', 'N/A')
+        discounts = metrics.get('total_discounts', 0)
+        
+        return (
+            f"🚨 **THE DIAGNOSIS**\n"
+            f"  Revenue leaks detected worth ${leak:,.0f}\n"
+            f"  from loss-making transactions.\n\n"
+            f"💰 **FINANCIAL IMPACT**\n"
+            f"  Current margin: {margin}%. Total\n"
+            f"  discount erosion: ${discounts:,.0f}\n\n"
+            f"🔍 **ROOT CAUSE**\n"
+            f"  Worst performing segment: {worst}.\n"
+            f"  High discount bands are eroding margins.\n\n"
+            f"💊 **THE FIX**\n"
+            f"  Set GOOGLE_API_KEY in .env for\n"
+            f"  AI-powered recommendations."
+        )
 
 if __name__ == "__main__":
     from analyzer import RevenueAnalyzer
