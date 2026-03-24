@@ -1,46 +1,42 @@
+"""
+AI Insight Engine — Multi-provider (Google Gemini / OpenAI)
+"""
+
 import os
 import json
-from dotenv import load_dotenv
 
-# Load env file from CWD, or module dir, or ~/.hephaestus
-cwd_env = os.path.join(os.getcwd(), '.env')
-module_env = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
-if os.path.exists(cwd_env):
-    load_dotenv(cwd_env)
-elif os.path.exists(module_env):
-    load_dotenv(module_env)
-else:
-    load_dotenv(os.path.expanduser('~/.hephaestus/.env'))
+from hephaestus.config import load_config
 
-# Configure GenAI
-api_key = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
-_genai_available = False
+config = load_config()
+_provider = config.get('provider', '')
+_api_key = config.get('api_key', '')
+_model_id = config.get('model_id', '')
+_engine_ready = False
 
-if api_key:
+# ── Google Gemini ────────────────────────────────────────────────
+if _provider == 'google' and _api_key:
     try:
         import google.generativeai as genai
-        genai.configure(api_key=api_key)
-        _genai_available = True
+        genai.configure(api_key=_api_key)
+        _engine_ready = True
     except Exception:
         pass
 
-class InsightEngine:
-    def __init__(self):
-        if _genai_available:
-            self.model = genai.GenerativeModel('gemini-2.5-flash')
-        else:
-            self.model = None
+# ── OpenAI ───────────────────────────────────────────────────────
+if _provider == 'openai' and _api_key:
+    try:
+        from openai import OpenAI
+        _openai_client = OpenAI(api_key=_api_key)
+        _engine_ready = True
+    except Exception:
+        pass
 
-    def generate_insights(self, metrics: dict) -> str:
-        if not self.model:
-            return self._fallback_insights(metrics)
-        
-        prompt = f"""
+PROMPT_TEMPLATE = """
 You are an expert Chief Revenue Officer (CRO) and direct response copywriter.
 You have been given the following raw financial P&L data:
 
 DATA:
-{json.dumps(metrics, indent=2)}
+{data}
 
 Your job is to act like a doctor diagnosing a business revenue problem. 
 
@@ -56,46 +52,63 @@ Rules:
 - No fluff. Write like you're talking to a busy CEO who only cares about the bottom line.
 - Present the insight as "If you fix X, you make $Y more."
 """
-        try:
-            response = self.model.generate_content(prompt)
-            return response.text
-        except Exception as e:
-            if "not found" in str(e).lower() or "invalid" in str(e).lower():
-                try:
-                    fallback_model = genai.GenerativeModel('gemini-1.5-flash')
-                    response = fallback_model.generate_content(prompt)
-                    return response.text
-                except Exception:
-                    return self._fallback_insights(metrics)
-            return self._fallback_insights(metrics)
+
+class InsightEngine:
+    def __init__(self):
+        self.ready = _engine_ready
     
-    def _fallback_insights(self, metrics):
-        """Static insights when AI is unavailable."""
+    def generate_insights(self, metrics: dict) -> str:
+        if not self.ready:
+            return self._fallback(metrics)
+        
+        prompt = PROMPT_TEMPLATE.format(data=json.dumps(metrics, indent=2, default=str))
+        
+        try:
+            if _provider == 'google':
+                return self._call_gemini(prompt)
+            elif _provider == 'openai':
+                return self._call_openai(prompt)
+            else:
+                return self._fallback(metrics)
+        except Exception:
+            return self._fallback(metrics)
+    
+    def _call_gemini(self, prompt):
+        model = genai.GenerativeModel(_model_id)
+        response = model.generate_content(prompt)
+        return response.text
+    
+    def _call_openai(self, prompt):
+        response = _openai_client.chat.completions.create(
+            model=_model_id,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1000
+        )
+        return response.choices[0].message.content
+    
+    def _fallback(self, metrics):
         leak = metrics.get('total_leak_value', 0)
-        margin = metrics.get('profit_margin', 0)
-        worst = metrics.get('worst_segment', 'N/A')
-        discounts = metrics.get('total_discounts', 0)
+        margin = metrics.get('margin_pct', 0)
+        worst = metrics.get('worst_category', 'N/A')
+        loss = metrics.get('total_loss', 0)
         
         return (
-            f"🚨 **THE DIAGNOSIS**\n"
-            f"  Revenue leaks detected worth ${leak:,.0f}\n"
-            f"  from loss-making transactions.\n\n"
-            f"💰 **FINANCIAL IMPACT**\n"
-            f"  Current margin: {margin}%. Total\n"
-            f"  discount erosion: ${discounts:,.0f}\n\n"
-            f"🔍 **ROOT CAUSE**\n"
-            f"  Worst performing segment: {worst}.\n"
-            f"  High discount bands are eroding margins.\n\n"
-            f"💊 **THE FIX**\n"
-            f"  Set GOOGLE_API_KEY in .env for\n"
-            f"  AI-powered recommendations."
+            f"🚨 THE DIAGNOSIS\n"
+            f"  Revenue leaks worth ${leak:,.0f} detected\n"
+            f"  in loss-making transactions.\n\n"
+            f"💰 FINANCIAL IMPACT\n"
+            f"  Current margin: {margin}%\n"
+            f"  Discount erosion: ${loss:,.0f}\n\n"
+            f"🔍 ROOT CAUSE\n"
+            f"  Weakest area: {worst}\n\n"
+            f"💊 THE FIX\n"
+            f"  Configure an AI model via Settings\n"
+            f"  for detailed recommendations."
         )
 
 if __name__ == "__main__":
-    from analyzer import RevenueAnalyzer
+    from hephaestus.analyzer import RevenueAnalyzer
     analyzer = RevenueAnalyzer()
     metrics = analyzer.get_summary_metrics()
-    
     engine = InsightEngine()
-    print("Generating AI Insights...\n")
     print(engine.generate_insights(metrics))

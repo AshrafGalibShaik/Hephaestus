@@ -10,7 +10,8 @@ setup(
         'plotext>=5.2.8',
         'pandas>=2.0.0',
         'python-dotenv>=1.0.0',
-        'google-generativeai>=0.3.0'
+        'google-generativeai>=0.3.0',
+        'openai>=1.0.0',
     ],
     entry_points={
         'console_scripts': [
