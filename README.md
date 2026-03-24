@@ -4,15 +4,16 @@
   <br><br>
   <em>Financial Intelligence Terminal</em>
   <br><br>
-  <img src="https://img.shields.io/badge/Python-3.11+-1a1a2e?style=flat-square&logo=python&logoColor=f0a500" alt="Python">
+  <img src="https://img.shields.io/badge/Python-3.9+-1a1a2e?style=flat-square&logo=python&logoColor=f0a500" alt="Python">
   <img src="https://img.shields.io/badge/Terminal-Rich-1a1a2e?style=flat-square&logoColor=f0a500" alt="Rich">
-  <img src="https://img.shields.io/badge/AI-Gemini-1a1a2e?style=flat-square&logo=google&logoColor=f0a500" alt="Gemini">
+  <img src="https://img.shields.io/badge/AI-Gemini%20%7C%20OpenAI-1a1a2e?style=flat-square&logo=google&logoColor=f0a500" alt="AI">
+  <img src="https://img.shields.io/badge/PyPI-hephaestus--pro-1a1a2e?style=flat-square&logo=pypi&logoColor=f0a500" alt="PyPI">
 </p>
 
 ---
 
 A Bloomberg-style CLI dashboard that transforms **any CSV** into actionable financial intelligence.  
-Import your data. Get AI-powered revenue leak diagnostics. All from the terminal.
+Import your data. Pick your AI model. Get revenue leak diagnostics. All from the terminal.
 
 ---
 
@@ -28,7 +29,34 @@ pip install hephaestus-pro
 hephaestus
 ```
 
-That's it. The interactive menu handles everything.
+On first launch, a setup wizard walks you through:
+
+```
+────────────── FIRST-TIME SETUP ──────────────
+
+  Select your AI model:
+
+  ── Google Gemini ──
+  1  │  Gemini 2.5 Flash
+  2  │  Gemini 2.0 Flash
+  3  │  Gemini 1.5 Flash
+
+  ── OpenAI ──
+  4  │  GPT-4o
+  5  │  GPT-4o Mini
+  6  │  GPT-3.5 Turbo
+
+  MODEL (1): _
+  GOOGLE_API_KEY: _
+
+────────────── LOAD YOUR DATA ────────────────
+
+  CSV files detected:
+  1  │  sample data/Financials.csv  68KB
+  SELECT (1): _
+```
+
+After setup, the Bloomberg terminal renders your financial data with AI-powered insights.
 
 ---
 
@@ -36,10 +64,22 @@ That's it. The interactive menu handles everything.
 
 | Step | Description |
 |:---|:---|
+| **Setup** | First-run wizard asks for AI model and API key |
 | **Import** | Feed any CSV — columns are auto-detected (numeric, categorical, currency) |
 | **Analyze** | Engine identifies value, cost, loss columns and groups by categories |
 | **Visualize** | Bloomberg-style terminal with responsive P&L charts |
-| **Diagnose** | Gemini AI generates CRO-level revenue leak recommendations |
+| **Diagnose** | AI generates CRO-level revenue leak recommendations |
+
+---
+
+### Supported AI Models
+
+| Provider | Models |
+|:---|:---|
+| Google Gemini | Gemini 2.5 Flash, 2.0 Flash, 1.5 Flash |
+| OpenAI | GPT-4o, GPT-4o Mini, GPT-3.5 Turbo |
+
+You can change your model anytime via the **Settings** menu.
 
 ---
 
@@ -47,37 +87,49 @@ That's it. The interactive menu handles everything.
 
 ```
 hephaestus/
-├── cli.py          Entry point — interactive terminal menu
+├── cli.py          Interactive terminal menu + setup wizard
+├── config.py       Persistent config manager (~/.hephaestus/)
 ├── main.py         Bloomberg dashboard renderer
 ├── analyzer.py     Auto-detecting universal data analyzer
-├── ai_engine.py    Gemini AI integration
+├── ai_engine.py    Multi-provider AI engine (Gemini / OpenAI)
 ├── import_data.py  Universal CSV importer
 └── database.py     SQLite connection manager
 ```
 
 ---
 
-### AI Configuration
+### Configuration
 
-Place a `.env` file in the `hephaestus/` directory, your working directory, or `~/.hephaestus/`:
+All config is stored at `~/.hephaestus/`:
 
-```
-GOOGLE_API_KEY=your_key
-```
-
-The dashboard renders with or without AI — static insights are generated as fallback.
+| File | Purpose |
+|:---|:---|
+| `config.json` | AI model selection and API key |
+| `revenue_leak.db` | Imported financial data |
 
 ---
 
-### Commands
+### Development
 
-| Command | Description |
-|:---|:---|
-| `hephaestus` | Launch the interactive terminal |
-| `python -m hephaestus.cli` | Alternative entry point |
+```bash
+git clone https://github.com/AshrafGalibShaik/Hephaestus.git
+cd Hephaestus
+pip install -e .
+hephaestus
+```
+
+---
+
+### Deploy to PyPI
+
+```bash
+pip install build twine
+python -m build
+python -m twine upload dist/*
+```
 
 ---
 
 <p align="center">
-  <sub>Built with <a href="https://github.com/Textualize/rich">Rich</a> · <a href="https://github.com/piccolomo/plotext">Plotext</a> · <a href="https://ai.google.dev/">Google Gemini</a></sub>
+  <sub>Built with <a href="https://github.com/Textualize/rich">Rich</a> · <a href="https://github.com/piccolomo/plotext">Plotext</a> · <a href="https://ai.google.dev/">Google Gemini</a> · <a href="https://openai.com/">OpenAI</a></sub>
 </p>
