@@ -11,11 +11,11 @@ A Bloomberg-style CLI dashboard that turns **any CSV** into actionable financial
 ## Quick Start
 
 ```bash
-# 1. Install dependencies
-pip install -r requirements.txt
+# 1. Clone the repository and install the application
+pip install -e .
 
-# 2. Run Hephaestus
-python run.py
+# 2. Run Hephaestus from anywhere!
+hephaestus
 ```
 
 That's it. The interactive menu will guide you through importing data and launching the dashboard.
@@ -28,6 +28,7 @@ That's it. The interactive menu will guide you through importing data and launch
 2. **Analyze** → It finds value/cost/loss columns and groups data by categories
 3. **Visualize** → Bloomberg-style terminal with responsive charts
 4. **AI Insights** → Gemini-powered CRO-level recommendations (optional)
+5. **Persistent** → Your data is saved globally at `~/.hephaestus/revenue_leak.db`, so you can launch the terminal from any folder.
 
 ---
 
@@ -35,17 +36,15 @@ That's it. The interactive menu will guide you through importing data and launch
 
 ```
 Hephaestus/
-├── run.py              ← Single entry point (start here)
-├── import_data.py      ← Universal CSV importer
+├── setup.py            ← Installation package config
 ├── requirements.txt    ← Dependencies
-├── .env                ← API key (optional, create yourself)
-├── app/
+├── hephaestus/         ← Core application package
+│   ├── cli.py          ← Interactive CLI menu (entry point)
 │   ├── main.py         ← Bloomberg terminal dashboard
 │   ├── analyzer.py     ← Auto-detecting data analyzer
 │   ├── ai_engine.py    ← Gemini AI integration
+│   ├── import_data.py  ← Universal CSV importer
 │   └── database.py     ← SQLite connection manager
-├── data/
-│   └── revenue_leak.db ← Auto-generated database
 └── sample data/
     └── Financials.csv  ← Example dataset
 ```
@@ -54,7 +53,7 @@ Hephaestus/
 
 ## AI Setup (Optional)
 
-Create a `.env` file in the project root:
+Create a `.env` file either in your current directory or globally at `~/.hephaestus/.env`:
 
 ```env
 GOOGLE_API_KEY=your_gemini_api_key_here
@@ -68,9 +67,8 @@ Without it, the dashboard still works with static insights.
 
 | Command | What it does |
 |---|---|
-| `python run.py` | Interactive menu (recommended) |
-| `python import_data.py "path/to/file.csv"` | Direct CSV import |
-| `python app/main.py` | Launch dashboard directly |
+| `hephaestus` | Interactive main menu (Launch terminal or Import data) |
+| `python -m hephaestus.cli` | Alternative way to run the menu |
 
 ---
 

@@ -1,6 +1,6 @@
 import sqlite3
 import pandas as pd
-from database import get_connection
+from hephaestus.database import get_connection
 
 class RevenueAnalyzer:
     """Universal analyzer — auto-detects columns and builds insights from any CSV."""

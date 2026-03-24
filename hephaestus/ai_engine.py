@@ -2,9 +2,15 @@ import os
 import json
 from dotenv import load_dotenv
 
-# Load env file from project root
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-load_dotenv(os.path.join(PROJECT_ROOT, '.env'))
+# Load env file from CWD, or module dir, or ~/.hephaestus
+cwd_env = os.path.join(os.getcwd(), '.env')
+module_env = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+if os.path.exists(cwd_env):
+    load_dotenv(cwd_env)
+elif os.path.exists(module_env):
+    load_dotenv(module_env)
+else:
+    load_dotenv(os.path.expanduser('~/.hephaestus/.env'))
 
 # Configure GenAI
 api_key = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')

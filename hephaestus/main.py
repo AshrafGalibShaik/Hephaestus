@@ -12,8 +12,8 @@ from rich.align import Align
 from rich.columns import Columns
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from analyzer import RevenueAnalyzer
-from ai_engine import InsightEngine
+from hephaestus.analyzer import RevenueAnalyzer
+from hephaestus.ai_engine import InsightEngine
 
 console = Console()
 

@@ -20,7 +20,7 @@ from rich.text import Text
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from app.database import get_connection
+from hephaestus.database import get_connection
 
 console = Console()
 
