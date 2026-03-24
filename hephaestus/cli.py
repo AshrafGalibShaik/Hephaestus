@@ -1,60 +1,60 @@
 """
  ▉ HEPHAESTUS — Financial Intelligence Terminal ▉
-
- Entry point for the CLI.
 """
 
 import os
 import sys
 import glob
+import sqlite3
+from datetime import datetime
 
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from rich.table import Table
 from rich.prompt import Prompt, Confirm
+from rich.rule import Rule
+from rich.align import Align
 
 console = Console()
 
+# Bloomberg palette — amber on black, nothing else
+A = "orange1"       # Amber — primary text
+D = "dim"           # Dimmed — secondary/muted
+B = "bright_white"  # Bright — emphasis
+BD = "orange1 dim"  # Dim amber
+
 def get_db_path():
-    hephaestus_dir = os.path.expanduser("~/.hephaestus")
-    return os.path.join(hephaestus_dir, "revenue_leak.db")
+    return os.path.join(os.path.expanduser("~/.hephaestus"), "revenue_leak.db")
 
 def has_data():
-    """Check if the database has data loaded."""
-    db_path = get_db_path()
-    if not os.path.exists(db_path):
+    db = get_db_path()
+    if not os.path.exists(db):
         return False
     try:
-        import sqlite3
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='raw_data'")
-        if not cursor.fetchone():
+        conn = sqlite3.connect(db)
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='raw_data'")
+        if not cur.fetchone():
             conn.close()
             return False
-        cursor.execute("SELECT COUNT(*) FROM raw_data")
-        count = cursor.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM raw_data")
+        n = cur.fetchone()[0]
         conn.close()
-        return count > 0
+        return n > 0
     except Exception:
         return False
 
 def get_row_count():
-    """Get number of rows in the database."""
     try:
-        import sqlite3
         conn = sqlite3.connect(get_db_path())
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM raw_data")
-        count = cursor.fetchone()[0]
+        n = conn.cursor().execute("SELECT COUNT(*) FROM raw_data").fetchone()[0]
         conn.close()
-        return count
+        return n
     except Exception:
         return 0
 
 def scan_for_csvs():
-    """Find CSV files in common locations from current working directory."""
     cwd = os.getcwd()
     found = []
     for pattern in [
@@ -67,39 +67,48 @@ def scan_for_csvs():
 
 def show_banner():
     console.clear()
-    banner = Text(justify="center")
-    banner.append("▉ H E P H A E S T U S ▉\n", style="bold cyan")
-    banner.append("Financial Intelligence Terminal\n", style="dim orange1")
-    console.print(Panel(banner, border_style="cyan", style="on black", padding=(1, 4)))
+    now = datetime.now().strftime("%Y-%m-%d  %H:%M:%S")
+    
+    # Top bar — like a Bloomberg header
+    header = Text(justify="center")
+    header.append("H E P H A E S T U S", style=f"bold {A}")
+    
+    console.print(Panel(
+        header,
+        border_style=A,
+        style="on black",
+        padding=(1, 2),
+        subtitle=f"[{D}]{now}[/{D}]",
+        subtitle_align="right"
+    ))
+    
+    console.print(
+        Text("  FINANCIAL INTELLIGENCE TERMINAL", style=f"{D}"),
+        justify="center"
+    )
+    console.print()
 
 def import_flow():
-    """Guide user through importing a CSV."""
-    console.print("\n[bold cyan]── DATA IMPORT ──[/bold cyan]\n")
+    console.print(Rule(f"[{A}]DATA IMPORT[/{A}]", style=D))
+    console.print()
     
     csvs = scan_for_csvs()
     
     if csvs:
-        console.print("[bold orange1]CSV files found nearby:[/bold orange1]\n")
-        table = Table(show_header=True, border_style="cyan", style="on black")
-        table.add_column("#", style="cyan", width=4)
-        table.add_column("File", style="orange1")
-        table.add_column("Size", style="dim")
+        console.print(f"  [{D}]CSV files detected:[/{D}]\n")
         
         for i, f in enumerate(csvs, 1):
             size = os.path.getsize(f)
-            size_str = f"{size/1024:.0f} KB" if size > 1024 else f"{size} B"
-            # Show relative path if possible
+            size_str = f"{size/1024:.0f}KB" if size > 1024 else f"{size}B"
             try:
-                rel_path = os.path.relpath(f, os.getcwd())
+                rel = os.path.relpath(f, os.getcwd())
             except ValueError:
-                rel_path = f
-            table.add_row(str(i), rel_path, size_str)
+                rel = f
+            console.print(f"  [{A}]{i}[/{A}]  [{D}]│[/{D}]  {rel}  [{D}]{size_str}[/{D}]")
         
-        console.print(table)
         console.print()
-        
         choice = Prompt.ask(
-            f"[cyan]Pick a file (1-{len(csvs)}) or type a custom external path[/cyan]",
+            f"  [{A}]SELECT FILE[/{A}] [{D}](1-{len(csvs)} or path)[/{D}]",
             default="1"
         )
         
@@ -108,26 +117,23 @@ def import_flow():
         else:
             filepath = choice.strip().strip('"').strip("'")
     else:
-        filepath = Prompt.ask("[cyan]Enter the path to your CSV file[/cyan]")
+        filepath = Prompt.ask(f"  [{A}]FILE PATH[/{A}]")
         filepath = filepath.strip().strip('"').strip("'")
     
-    # Resolve relative paths relative to CWD
     if not os.path.isabs(filepath):
         filepath = os.path.join(os.getcwd(), filepath)
         
     if not os.path.isfile(filepath):
-        console.print(f"[bold red]File not found:[/bold red] {filepath}")
+        console.print(f"\n  [red]ERROR  File not found[/red]")
         return
     
-    console.print(f"\n[dim]Importing: {filepath}[/dim]\n")
+    console.print(f"\n  [{D}]Loading {os.path.basename(filepath)}...[/{D}]\n")
     
-    # Run the import
     from hephaestus.import_data import import_csv
     import_csv(filepath)
 
 def dashboard_flow():
-    """Launch the Bloomberg terminal dashboard."""
-    console.print("\n[dim]Launching terminal...[/dim]\n")
+    console.print(f"\n  [{D}]Initializing terminal...[/{D}]\n")
     from hephaestus.main import main as run_dashboard
     run_dashboard()
 
@@ -138,46 +144,42 @@ def main():
     
     if data_loaded:
         rows = get_row_count()
-        console.print(f"[green]✓ Database loaded:[/green] [bold]{rows}[/bold] records\n")
+        console.print(f"  [{A}]●[/{A}]  [{D}]DATABASE[/{D}]  [{B}]{rows:,}[/{B}] [{D}]records loaded[/{D}]")
     else:
-        console.print("[yellow]⚠ No data loaded yet.[/yellow] Import a CSV to get started.\n")
+        console.print(f"  [{D}]○  DATABASE  No data loaded[/{D}]")
     
-    # Menu
-    table = Table(show_header=False, border_style="cyan", style="on black", padding=(0, 2))
-    table.add_column("Key", style="bold cyan", width=6)
-    table.add_column("Action", style="orange1")
-    
-    if data_loaded:
-        table.add_row("[1]", "Launch Dashboard")
-        table.add_row("[2]", "Import New Data (CSV)")
-        table.add_row("[3]", "Exit")
-    else:
-        table.add_row("[1]", "Import Data (CSV)")
-        table.add_row("[2]", "Exit")
-    
-    console.print(table)
+    console.print()
+    console.print(Rule(style=D))
     console.print()
     
-    choice = Prompt.ask("[cyan]Select[/cyan]", choices=["1", "2", "3"] if data_loaded else ["1", "2"], default="1")
+    if data_loaded:
+        console.print(f"  [{A}]1[/{A}]  [{D}]│[/{D}]  Launch Terminal")
+        console.print(f"  [{A}]2[/{A}]  [{D}]│[/{D}]  Import Data")
+        console.print(f"  [{A}]3[/{A}]  [{D}]│[/{D}]  Exit")
+        console.print()
+        choice = Prompt.ask(f"  [{A}]>[/{A}]", choices=["1", "2", "3"], default="1", show_choices=False)
+    else:
+        console.print(f"  [{A}]1[/{A}]  [{D}]│[/{D}]  Import Data")
+        console.print(f"  [{A}]2[/{A}]  [{D}]│[/{D}]  Exit")
+        console.print()
+        choice = Prompt.ask(f"  [{A}]>[/{A}]", choices=["1", "2"], default="1", show_choices=False)
     
     if data_loaded:
         if choice == "1":
             dashboard_flow()
         elif choice == "2":
             import_flow()
-            if has_data():
-                if Confirm.ask("\n[cyan]Launch dashboard now?[/cyan]", default=True):
-                    dashboard_flow()
+            if has_data() and Confirm.ask(f"\n  [{A}]Launch terminal?[/{A}]", default=True):
+                dashboard_flow()
         else:
-            console.print("[dim]Goodbye.[/dim]")
+            console.print(f"\n  [{D}]Session terminated.[/{D}]\n")
     else:
         if choice == "1":
             import_flow()
-            if has_data():
-                if Confirm.ask("\n[cyan]Launch dashboard now?[/cyan]", default=True):
-                    dashboard_flow()
+            if has_data() and Confirm.ask(f"\n  [{A}]Launch terminal?[/{A}]", default=True):
+                dashboard_flow()
         else:
-            console.print("[dim]Goodbye.[/dim]")
+            console.print(f"\n  [{D}]Session terminated.[/{D}]\n")
 
 if __name__ == "__main__":
     main()
