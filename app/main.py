@@ -36,12 +36,11 @@ def setup_plotext_theme():
     plt.theme('dark')
     # Use standard plotext methods for colors if needed, but 'dark' works
 
-def create_funnel_ansi(metrics):
+def create_funnel_ansi(metrics, terminal_width):
     plt.clf()
     setup_plotext_theme()
-    # Dynamic sizing based on terminal width/height can be tricky inside layout,
-    # so we use a reasonable fixed/constrained size
-    plt.plotsize(plt.tw() // 2 if plt.tw() else 50, 12)
+    # Dynamic sizing based on the panel width allocated by Rich
+    plt.plotsize(terminal_width, 12)
     plt.title("CUSTOMER JOURNEY FUNNEL")
     
     stages = []
@@ -54,10 +53,10 @@ def create_funnel_ansi(metrics):
     plt.bar(stages, users, orientation="horizontal", color="yellow")
     return plt.build()
 
-def create_roi_ansi(metrics):
+def create_roi_ansi(metrics, terminal_width):
     plt.clf()
     setup_plotext_theme()
-    plt.plotsize(plt.tw() // 2 if plt.tw() else 40, 15)
+    plt.plotsize(terminal_width, 15)
     plt.title("MARKETING ROI (%)")
     
     sources = []
@@ -94,8 +93,8 @@ def render_financial_impact(metrics):
         padding=(1, 2)
     )
 
-def render_funnel(metrics):
-    ansi_plot = create_funnel_ansi(metrics)
+def render_funnel(metrics, width):
+    ansi_plot = create_funnel_ansi(metrics, width)
     return Panel(
         Align.center(Text.from_ansi(ansi_plot)),
         title=f"[bold {TERM_BORDER}]FUNNEL METRICS[/bold {TERM_BORDER}]",
@@ -103,8 +102,8 @@ def render_funnel(metrics):
         style=f"on {TERM_BG}"
     )
 
-def render_marketing_roi(metrics):
-    ansi_plot = create_roi_ansi(metrics)
+def render_marketing_roi(metrics, width):
+    ansi_plot = create_roi_ansi(metrics, width)
     return Panel(
         Align.center(Text.from_ansi(ansi_plot)),
         title=f"[bold {TERM_BORDER}]MARKETING P&L[/bold {TERM_BORDER}]",
@@ -165,12 +164,19 @@ def main():
         insights = engine.generate_insights(metrics)
         progress.update(task3, description="Querying AI Oracle... DONE")
 
-    # 2. Build Layout
+    # 2. Build Layout and calculate relative widths
     layout = make_layout()
+    term_w, term_h = console.size
+    
+    # Left column is ratio 6/10, minus border paddings (approx 6 chars)
+    left_plot_width = max(20, int(term_w * 0.6) - 6)
+    # Right column is ratio 4/10, minus border paddings (approx 6 chars)
+    right_plot_width = max(20, int(term_w * 0.4) - 6)
+
     layout["header"].update(create_header())
     layout["impact"].update(render_financial_impact(metrics))
-    layout["funnel"].update(render_funnel(metrics))
-    layout["roi"].update(render_marketing_roi(metrics))
+    layout["funnel"].update(render_funnel(metrics, left_plot_width))
+    layout["roi"].update(render_marketing_roi(metrics, right_plot_width))
     layout["ai_insights"].update(render_ai_insights(insights))
     
     # 3. Print the layout once (Bloomberg terminal view)
