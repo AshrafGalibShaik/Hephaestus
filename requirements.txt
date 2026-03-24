@@ -1,0 +1,5 @@
+pandas
+google-generativeai
+rich
+python-dotenv
+plotext
