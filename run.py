@@ -116,7 +116,7 @@ def import_flow():
     console.print(f"\n[dim]Importing: {filepath}[/dim]\n")
     
     # Run the import
-    from import_data import import_csv
+    from app.import_data import import_csv
     import_csv(filepath)
 
 def dashboard_flow():
