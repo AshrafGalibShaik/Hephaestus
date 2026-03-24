@@ -19,7 +19,7 @@ Import your data. Get AI-powered revenue leak diagnostics. All from the terminal
 ### Install
 
 ```
-pip install -e .
+pip install hephaestus-pro
 ```
 
 ### Run
