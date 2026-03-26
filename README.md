@@ -16,6 +16,7 @@ A Bloomberg-style CLI dashboard that transforms **any CSV** into actionable fina
 Import your data. Pick your AI model. Get revenue leak diagnostics. All from the terminal.
 
 ---
+<img width="1516" height="500" alt="Hephaestus" src="https://github.com/user-attachments/assets/03adf6ba-87b9-4faa-9b2c-d77f47539d60" />
 
 ### Install
 
