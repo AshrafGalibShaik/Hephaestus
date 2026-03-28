@@ -121,16 +121,6 @@ hephaestus
 
 ---
 
-### Deploy to PyPI
-
-```bash
-pip install build twine
-python -m build
-python -m twine upload dist/*
-```
-
----
-
 <p align="center">
   <sub>Built with <a href="https://github.com/Textualize/rich">Rich</a> · <a href="https://github.com/piccolomo/plotext">Plotext</a> · <a href="https://ai.google.dev/">Google Gemini</a> · <a href="https://openai.com/">OpenAI</a></sub>
 </p>
